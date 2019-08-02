@@ -7,8 +7,11 @@ Run Geeqie in a container
 * XQuartz
 
 # Usage
-I wrote a Makefile for handling the life cycles of images and containers, the
+I wrote a Makefile for handling the life cycle of images and containers, the
 syntax is as follows:
+
+## Getting Help
+    $ make help
 
 ## Building the image
     $ make build
@@ -22,11 +25,11 @@ instance:
 
     $ make VOL_SHARE=~/geeqie run
 
-## Getting a shell access to the running container
-    $ make exec
+## Getting a shell access into the running container
+    $ make shell
 
 ## Stopping the container
     $ make stop
 
 ## Removing the image
-    $ make rm
+    $ make clean
