@@ -13,6 +13,13 @@ ifeq "$(wildcard $(DOCKER))" ""
   DOCKER = $(if $(DOCKER_FOUND),$(DOCKER_FOUND),$(error docker is not found))
 endif
 
+# Check if Docker is running
+ifneq "$(MAKECMDGOALS)" "$(filter $(MAKECMDGOALS), help)"
+  ifneq "$(shell $(DOCKER) version > /dev/null && echo running)" "running"
+    $(error Docker is not running)
+  endif
+endif
+
 # Retrieve your private IP whether the target is run or shell
 ifeq "$(MAKECMDGOALS)" "$(filter $(MAKECMDGOALS), run shell)"
   IP := $(shell ifconfig | $(AWK) '/inet 192\.168\./{print $$2}' 2>/dev/null | head -n 1)
@@ -40,23 +47,9 @@ endef
 help: ## Show help
 	@echo "Usage: make [VOL_SHARE=/tmp] TARGET\n"
 	@echo "Targets:"
-	@$(AWK) -F ":.* ##" '/.*:.*##/{printf "%-13s%s\n", $$1, $$2}' \
+	@$(AWK) -F ":.* ##" '/^[^#].*:.*##/{printf "%-13s%s\n", $$1, $$2}' \
 	$(MAKEFILE_LIST) \
 	| grep -v AWK
-
-$(VOL_SHARE):
-	@mkdir -p $@
-
-.PHONY: build
-build: $(BUILD) ## Build the image from the Dockerfile
-
-$(BUILD): Dockerfile
-	$(call docker-container-stop)
-	$(call docker-image-rm)
-
-	cd dockerfile && \
-	$(DOCKER) build -t $(IMAGE) .
-	@touch $@
 
 .PHONY: shell
 shell: run ## Get a shell into the container
@@ -73,6 +66,20 @@ run: $(VOL_SHARE) $(BUILD) ## Run the container
 	  --name $(CONTAINER) \
 	  $(IMAGE); \
 	fi
+
+$(VOL_SHARE):
+	@mkdir -p $@
+
+.PHONY: build
+build: $(BUILD) ## Build the image from the Dockerfile
+
+$(BUILD): Dockerfile
+	$(call docker-container-stop)
+	$(call docker-image-rm)
+
+	cd dockerfile && \
+	$(DOCKER) build -t $(IMAGE) .
+	@touch $@
 
 .PHONY: clean
 clean: stop ## Delete the image
